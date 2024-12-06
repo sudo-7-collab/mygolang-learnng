@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -35,7 +36,22 @@ func (c *Course) IsEmpty() bool {
 }
 
 func main() {
+	fmt.Println("API - Learn Routing")
+	r := mux.NewRouter()
 
+	// seeding
+	courses = append(courses, Course{CourseId: "2", CourseName: "ReactJS", CoursePrice: 299, Author: &Author{Fullname: "Hitesh Chowdhary", Website: "lco.dev"}})
+	courses = append(courses, Course{CourseId: "4", CourseName: "MERN Stack", CoursePrice: 199, Author: &Author{Fullname: "Hitesh Chowdhary", Website: "lco.dev"}})
+
+	r.HandleFunc("/", serveHome).Methods("GET")
+	r.HandleFunc("/courses", getAllCourse).Methods("GET")
+	r.HandleFunc("/course/{id}", getOneCourse).Methods("GET")
+	r.HandleFunc("/course", createOneCourse).Methods("POST")
+	r.HandleFunc("/course/{id}", updateOneCourse).Methods("PUT")
+	r.HandleFunc("/course/{id}", deleteOneCourse).Methods("DELETE")
+
+	// listen to a port
+	log.Fatal(http.ListenAndServe(":4000", r))
 }
 
 // controllers - file
@@ -82,7 +98,11 @@ func createOneCourse(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&course)
 	if course.IsEmpty() {
 		json.NewEncoder(w).Encode("No data inside json")
+		return
 	}
+
+	// TODO: check only if title is duplicate
+	// loop, title matches with course.coursename, JSON
 
 	// generate unique id, string
 	// append course into courses
@@ -114,5 +134,21 @@ func updateOneCourse(w http.ResponseWriter, r *http.Request) {
 	//TODO: send a response when id is not found
 	if r.Body == nil {
 		json.NewEncoder(w).Encode("Please send some data")
+	}
+}
+
+func deleteOneCourse(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Delete One Course")
+	w.Header().Set("Content-Type", "application/json")
+
+	params := mux.Vars(r)
+
+	// loop, id , remove (index, index + 1)
+	for index, course := range courses {
+		if course.CourseId == params["id"] {
+			courses = append(courses[:index], courses[index+1:]...)
+			// TODO: send a confirm or deny response
+			break
+		}
 	}
 }
